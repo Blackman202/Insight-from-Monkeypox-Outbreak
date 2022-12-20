@@ -1,0 +1,13 @@
+name: monkeypox
+title: monkeypox
+username:
+account: midega-george
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7920517
+bundleId: 6657200
+url: https://midega-george.shinyapps.io/monkeypox/
+when: 1671532844.90166
+lastSyncTime: 1671532844.90169
+asMultiple: FALSE
+asStatic: FALSE
