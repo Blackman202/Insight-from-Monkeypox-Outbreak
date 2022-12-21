@@ -1,0 +1,176 @@
+---
+title: "Americares Foundation"
+author: "Midega George"
+date: "2022-12-17"
+output: 
+  word_document: 
+    highlight: zenburn
+    fig_width: 7
+    fig_height: 5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment=NA)
+```
+
+# Business Problem
+
+Pandemics -- wide-reaching outbreak of infectious diseases -- largely leads to escalated disease prevalence and mortality in the human population. In such cases, there are significant human socio-economic and political disruptions (Madhav et al., 2017). Over the centuries, the likelihood of pandemics has risen due to urbanization, increased intercontinental travel, and pronounced natural environment exploitation (Madhav et al., 2017). Certainly, these trends will continue and intensify (Moore et al., 2022). One of the recent pandemics is the mpox outbreak which closely followed the Covid-19 pandemic. The World Health Organization (WHO) confirmed that the outbreak had been reported in countries where the disease was not endemic. More non-endemic countries continue to report the same (World Health Organization, 2022).
+
+In light of these events, Americares Foundation decided to understand mpox's morbidity and mortality in the U.S. and other countries and check for available research activities by various health bodies. This way, the Foundation can comprehensively know what is and will be required from them to fight against mpox outbreaks locally and globally.
+
+# Datasets
+
+For a comprehensive outlook, two online licence-free datasets will be used; the Monkeypox Research Summary data provided by Smith (2022) on the [HealthData.gov](https://healthdata.gov/Health/Monkeypox-Research-Summary-Data/x7kq-cyv4/data) website and the World Health Organization data on the global [Monkeypox outbreak](https://ourworldindata.org/explorers/monkeypox) provided by Mathieu et al. (2022).
+
+Smith's (2022) dataset contains the critical research areas that will allow for comprehension of the mpox outbreak in the U.S. and globally. This way the U.S. Government in association with experts and stakeholders can establish effective responses to the current outbreak and come up with prevent measures for future outbreaks. From this data, the first variable of interest will be the topic of research. That is, whether the research touches on vaccines, epidemiology, therapeutic, diagnostic, outreach, education or lab safety. Another variable of interest will be the agency involved in the research. These agency could include the NIH, CDC, DOD, among others. The third variable of interest will be whether the research is conducted domestically or globally. The final area of interested provided in the data will be whether the research is ongoing, active, planned, or still in the planning phase.
+
+The dataset provided by Mahieu et al. (2022) touches on daily recorded cases and deaths of mpox outbreak. The data is collated by the World Health Organization and by the time of retrieval, the data contained variables collected from May 1, 2022 to December 14, 2022. Therefore, these two datasets play a vital role in providing actionable insights to the Americares Foundation. Smith's (2022) data will enable the Foundation to be informed on the recent advances on the fight against mpox locally and globally. On the other hand, Mathieu et al. (2022) data will enable the organization be informed about regions in the world worst hit by the outbreak.
+
+# Data Analysis
+
+-   Selecting only specific variables
+
+-   Renaming
+
+-   Checking for uniqueness of entries in each variable.
+
+```{r}
+research_data <- read.csv("research_areas.csv")
+research_data <- research_data[c("Topic", "Agency.and.Office.Name", "Status",
+                                 "Country.ies..in.which.research.is.will.be.conducted")]
+names(research_data) <- c("Topic", "Agencies", "Status", "Research_region")
+
+head(research_data, 1)
+```
+
+```{r}
+unique(research_data$Status)
+which(research_data$Status=="")
+```
+
+```{r}
+research_data$Research_region <- substring(research_data$Research_region, 0, 13)
+unique(research_data$Research_region)
+```
+
+```{r}
+research_data$Status  <- gsub(" phases", '', research_data$Status)
+research_data$Status  <- gsub(";", '', research_data$Status)
+
+unique(research_data$Status)
+```
+
+There was only one missing entry for the variable `Status`. However, the entry was not deleted because there were valuable information for other variables in this entry. All the values in the `Topic` and `Agencies` variables were unique. However, in the `Status` variable, the entries "*Planning*" and "*Planning phase*" imply the same thing. Therefore, string manipulation was conducted to make the final value to be "*Planning*". Likewise, there appeared to be an error when entering the value "*Ongoing*" and "*Ongoing;*". Therefore, the value had to be manipulated to "*Ongoing*". Finally, one of the interest of this analysis is to determine whether a research was conducted domestically or internationally. Thus, the values in the `Research_region` variable were manipulated to either read as "*Domestic*" or "*International*". 
+
+From the results in Figure 1, it is evident that most common topics from the data were dealing with epidemiology, vaccine, therapeutics and diagnostics (Figure 1A). It is also evident that most research were being conducted domestically (Figure 1B). It is also clear that most research were ongoing. The CDC was the agency with most ongoing research studies followed by a collaboration between NIH and NIAID. The other agencies with most projects was the DOE (Figure 1D). 
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(ggpubr)
+
+topic <- research_data %>%
+  count(Topic) %>%
+  ggplot(aes(x = reorder(Topic, n), y = n))+
+  geom_bar(stat = 'identity', width=0.5) +
+  xlab("Topic")+
+  ylab("Frequency")+
+  coord_flip()+
+  theme_bw()
+
+agencies <- research_data %>%
+  count(Agencies) %>%
+  ggplot(aes(x = reorder(Agencies, n), y = n))+
+  geom_bar(stat = 'identity', width=0.5) +
+  xlab("Agencies")+
+  ylab("Frequency")+
+  coord_flip()+
+  theme_bw()
+
+region <- research_data %>%
+  count(Research_region) %>%
+  ggplot(aes(x = reorder(Research_region, n), y = n))+
+  geom_bar(stat = 'identity', width=0.5) +
+  xlab("Region")+
+  ylab("Frequency")+
+  coord_flip()+
+  theme_bw()
+
+status <- research_data %>%
+  count(Status) %>%
+  ggplot(aes(x = reorder(Status, n), y = n))+
+  geom_bar(stat = 'identity', width=0.5) +
+  xlab("Status")+
+  ylab("Frequency")+
+  coord_flip()+
+  theme_bw()
+
+ggarrange(topic, region, status, ncol=2, nrow=2, labels=c("A", "B", "C"), ggarrange(agencies, labels="D"))
+
+p1 <- ggplotly(topic)
+p2 <- ggplotly(region)
+p3 <- ggplot(status)
+p4 <- ggplot(agencies)
+```
+
+```{r}
+daily_cases <- read.csv("daily_mpox_cases.csv")
+daily_cases <- daily_cases[c("location", "date", "total_cases", "total_deaths")]
+daily_cases$date <- as.POSIXct(daily_cases$date)
+```
+
+From the data displayed in Figure 2, United States, Spain, and Brazil have the highest number of reported cases (Figure 2A) while Nigeria, Brazil, and the United States have the highest number of reported death cases (Figure 2B).  
+
+```{r}
+location_cases <- daily_cases %>%
+  group_by(location) %>%
+  summarise(across(total_cases:total_deaths, sum))
+
+
+worlddata <- map_data("world")
+mapped_locations <- left_join(worlddata, location_cases, by=c('region'='location'))
+mapped_cases <- ggplot(mapped_locations, aes(x=long, y=lat, group=group))+
+  geom_polygon(aes(fill=total_cases), color="grey")
+
+mapped_cases <- mapped_cases + scale_fill_gradient(name="Total Cases", low="#d3a500", 
+                                                   high="#ff0f00", na.value="royalblue")+
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        rect=element_blank())
+
+mapped_deaths <- ggplot(mapped_locations, aes(x=long, y=lat, group=group))+
+  geom_polygon(aes(fill=total_deaths), color="grey")
+
+mapped_deaths <- mapped_deaths + scale_fill_gradient(name="Total Deaths", low="#f67e6d", 
+                                                     high="#ff0f00", na.value="royalblue")+
+  theme(axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.y=element_blank(),
+        axis.title.x=element_blank(),
+        rect=element_blank())
+
+ggarrange(mapped_cases, mapped_deaths, ncol=1, nrow=2, labels=c("A", "B"))
+```
+
+   
+   
+```{r}
+location_cases[location_cases$total_deaths > 250,]
+```
+
+```{r}
+savehistory(file = ".Rhistory")
+
+conditionalPanel("input.sidebar == 'research_data' && input.t2 == 'bars'", selectInput("data", "Choose a database",choices=df_list, selected=df_list[[1]])),
+          conditionalPanel("input.sidebar == 'research_data' && input.t2 == 'bars'", selectInput("xcol", "Variable X", c())),
+          conditionalPanel("input.sidebar == 'research_data' && input.t2 == 'bars'", selectInput("ycol", "Variable Y", c())),
+```
+
+
+
